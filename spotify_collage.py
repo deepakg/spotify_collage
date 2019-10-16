@@ -8,26 +8,33 @@ import requests
 import spotipy
 import spotipy.oauth2 as oauth2
 
+from queue import Queue
 from concurrent import futures
 
 from PIL import Image
-from RemoteImage import RemoteImage
 
 data = {}
 fetching = False
 img = None
-show_imgs = False
-rimgs = []
-bimpy_imgs = []
+q = Queue()
 credentials = oauth2.SpotifyClientCredentials(
     client_id='27714d82fb8f4c8e8f6a269330b8d613',
     client_secret='b3ff8b67e39e4704baf265c4e7fa8e7c')
 
+
+def download_image(url):
+    r = requests.get(url)
+    if r.status_code != requests.codes.ok:
+        assert False, 'Status code error: {}.'.format(r.status_code)
+    raw_bytes = io.BytesIO(r.content)
+    img = Image.open(raw_bytes)
+    return img
+
+
 def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
     global data
     global fetching
-    global rimgs
-    global show_imgs
+    global refresh
 
     fetching = True
     token = credentials.get_access_token()
@@ -37,17 +44,6 @@ def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
     # r = requests.get(url)
     # data = r.json()
     fetching = False
-
-    if rimgs:
-        for rimg in rimgs:
-            print("Segfault?")
-            time.sleep(1)
-            rimg.downloaded = False
-            return
-            rimg.bimpy_img = None
-            print("Segfault?")
-            time.sleep(1)
-        rimgs = []
 
     # trigger download of album images
     img_urls = []
@@ -62,12 +58,25 @@ def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
 
         #if count == 25:
         #    break
-    rimgs = list(map(RemoteImage, img_urls))
 
     # download 8 at a time
     with futures.ThreadPoolExecutor(8) as executor:
-        for rimg in rimgs:
-            executor.submit(rimg.download)
+        future_url = {executor.submit(download_image, img_url): img_url for img_url in img_urls}
+        first = True
+        for future in futures.as_completed(future_url):
+            img_url = future_url[future]
+            try:
+                img = future.result()
+            except Exception as ex:
+                print(f"{img_url} generated exception: {ex}")
+            else:
+                # print(img)
+                if first:
+                    # first image is ready, tell imgui to start refreshing the images
+                    refresh = True
+                    first = False
+                q.put(img)
+
 
 # file = './spotify.old/playlist-2.json'
 # with open(file, 'r') as fp:
@@ -82,7 +91,8 @@ ctx = bimpy.Context()
 ctx.init(1024,768, "Spotify Collage")
 
 playlist_url = bimpy.String()
-
+bimpy_images = []
+refresh = False
 while(not ctx.should_close()):
     with ctx:
         bimpy.themes.set_light_theme()
@@ -116,24 +126,43 @@ while(not ctx.should_close()):
                 count += 1
             bimpy.columns(1)
 
-        if rimgs:
-            bimpy.begin('Collage')
-            width = 64
-            count = 0
-            col_count = 0
-            row_count = 0
-            for rimg in rimgs:
-                # print(rimg)
-                bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*width+20))
-                col_count += 1
-                if col_count == 10:
-                    row_count += 1
-                    col_count = 0
+        # if rimgs:
+        #     bimpy.begin('Collage')
+        #     width = 64
+        #     count = 0
+        #     col_count = 0
+        #     row_count = 0
+        #     for rimg in rimgs:
+        #         # print(rimg)
+        #         bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*width+20))
+        #         col_count += 1
+        #         if col_count == 10:
+        #             row_count += 1
+        #             col_count = 0
 
 
-                if rimg.downloaded:
-                    if not rimg.bimpy_img:
-                        rimg.make_bimpy_img(bimpy)
-                    bimpy.image(rimg.bimpy_img)
-            bimpy.end()
+        #         if rimg.downloaded:
+        #             if not rimg.bimpy_img:
+        #                 rimg.make_bimpy_img(bimpy)
+        #             bimpy.image(rimg.bimpy_img)
+        #     bimpy.end()
+
+        while True:
+            try:
+                img = q.get(block=False)
+            except:
+                break
+            else:
+                if img is None:
+                    break
+                if refresh == True:
+                    bimpy_images = []
+                    refresh = False
+                bimpy_images.append(bimpy.Image(img))
+                q.task_done()
+
+        for b_img in bimpy_images:
+            bimpy.image(b_img)
+            bimpy.same_line()
+
         bimpy.end()
