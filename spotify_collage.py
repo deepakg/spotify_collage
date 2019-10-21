@@ -1,6 +1,5 @@
 import io
 import json
-import time
 import threading
 
 import bimpy
@@ -13,16 +12,27 @@ from concurrent import futures
 
 from PIL import Image
 
-data = {}
-fetching = False
-img = None
 q = Queue()
+data = {}
+bimpy_imgdict = {}
+
+playlist_downloading = False
+imgs_downloading = False
+
+imgs_downloaded = 0
+percent_downloaded = 0
+imgs_total = 0
+
 credentials = oauth2.SpotifyClientCredentials(
     client_id='27714d82fb8f4c8e8f6a269330b8d613',
     client_secret='b3ff8b67e39e4704baf265c4e7fa8e7c')
 
 
 def download_image(url):
+    # simulate slow connection by uncommenting the lines below
+    import random
+    import time
+    time.sleep(int(random.random()*10))
     r = requests.get(url)
     if r.status_code != requests.codes.ok:
         assert False, 'Status code error: {}.'.format(r.status_code)
@@ -31,33 +41,39 @@ def download_image(url):
     return img
 
 
+img_urls = []
 def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
     global data
-    global fetching
+    global playlist_downloading
+    global imgs_downloading
     global refresh
+    global imgs_downloaded
+    global imgs_total
+    global percent_downloaded
+    global img_urls
 
-    fetching = True
+    playlist_downloading = True
+
     token = credentials.get_access_token()
     spotify = spotipy.Spotify(auth=token)
 
     data = spotify.user_playlist_tracks("", playlist_id)
-    # r = requests.get(url)
-    # data = r.json()
-    fetching = False
+
+    playlist_downloading = False
+    imgs_downloaded = 0
+    percent_downloaded = 0
+    imgs_downloading = True
 
     # trigger download of album images
     img_urls = []
     seen_img_urls = set()
-    count = 0
     for item in data['items']:
         for image in item['track']['album']['images']:
             if image['width'] == 64 and image['url'] not in seen_img_urls:
                 img_urls.append(image['url'])
                 seen_img_urls.add(image['url'])
-                count += 1
 
-        #if count == 25:
-        #    break
+    imgs_total = len(img_urls)
 
     # download 8 at a time
     with futures.ThreadPoolExecutor(8) as executor:
@@ -67,6 +83,8 @@ def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
             img_url = future_url[future]
             try:
                 img = future.result()
+                imgs_downloaded += 1
+                percent_downloaded = imgs_downloaded/imgs_total
             except Exception as ex:
                 print(f"{img_url} generated exception: {ex}")
             else:
