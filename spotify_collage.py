@@ -101,12 +101,14 @@ while(not ctx.should_close()):
         bimpy.set_next_window_size(bimpy.Vec2(800, 600), bimpy.Condition.Once)
         bimpy.begin("Track Listing", bimpy.Bool(True), bimpy.WindowFlags.HorizontalScrollbar | bimpy.WindowFlags.NoSavedSettings)
         bimpy.input_text('Playlist URL', playlist_url, 255)
-        if not fetching:
+        if not playlist_downloading and not imgs_downloading:
             if bimpy.button("Fetch##Fetcher"):
                 # data = fetch_playlist() # this blocks so let's use a thread
                 thread = threading.Thread(target=fetch_playlist, args=(playlist_url.value.strip(),))
                 thread.start()
-        else:
+        elif imgs_downloading:
+            bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
+        elif playlist_downloading:
             bimpy.button("Fetching...")
 
         if data:
