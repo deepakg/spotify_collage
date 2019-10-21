@@ -126,43 +126,43 @@ while(not ctx.should_close()):
                 count += 1
             bimpy.columns(1)
 
-        # if rimgs:
-        #     bimpy.begin('Collage')
-        #     width = 64
-        #     count = 0
-        #     col_count = 0
-        #     row_count = 0
-        #     for rimg in rimgs:
-        #         # print(rimg)
-        #         bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*width+20))
-        #         col_count += 1
-        #         if col_count == 10:
-        #             row_count += 1
-        #             col_count = 0
-
-
-        #         if rimg.downloaded:
-        #             if not rimg.bimpy_img:
-        #                 rimg.make_bimpy_img(bimpy)
-        #             bimpy.image(rimg.bimpy_img)
-        #     bimpy.end()
-
         while True:
             try:
-                img = q.get(block=False)
+                (url,img) = q.get(block=False)
             except:
                 break
             else:
-                if img is None:
+                if url is None or img is None:
                     break
                 if refresh == True:
                     bimpy_images = []
+                    bimpy_imgdict = {}
                     refresh = False
                 bimpy_images.append(bimpy.Image(img))
+                bimpy_imgdict[url] = bimpy.Image(img)
                 q.task_done()
 
-        for b_img in bimpy_images:
-            bimpy.image(b_img)
-            bimpy.same_line()
-
+        #if bimpy_images:
+        if img_urls:
+            # print(bimpy_imgdict)
+            bimpy.begin('Collage')
+            width,height = 64,64
+            first = True
+            col_count = 0
+            row_count = 0
+            padding = 0
+            for url in img_urls:
+                if first:
+                    padding = bimpy.get_cursor_pos().y
+                    first = False
+                bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*height+padding))
+                col_count += 1
+                if col_count == 7:
+                    row_count += 1
+                    col_count = 0
+                b_img = bimpy_imgdict.get(url, None)
+                if b_img:
+                    bimpy.image(b_img)
+                bimpy.same_line()
+            bimpy.end()
         bimpy.end()
