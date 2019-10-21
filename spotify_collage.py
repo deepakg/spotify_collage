@@ -93,9 +93,10 @@ ctx.init(1024,768, "Spotify Collage")
 playlist_url = bimpy.String()
 bimpy_images = []
 refresh = False
+
 while(not ctx.should_close()):
     with ctx:
-        bimpy.themes.set_light_theme()
+        # bimpy.themes.set_light_theme()
         bimpy.set_next_window_pos(bimpy.Vec2(20, 20), bimpy.Condition.Once)
         bimpy.set_next_window_size(bimpy.Vec2(800, 600), bimpy.Condition.Once)
         bimpy.begin("Track Listing", bimpy.Bool(True), bimpy.WindowFlags.HorizontalScrollbar | bimpy.WindowFlags.NoSavedSettings)
