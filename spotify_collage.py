@@ -75,17 +75,8 @@ def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
                     # first image is ready, tell imgui to start refreshing the images
                     refresh = True
                     first = False
-                q.put(img)
-
-
-# file = './spotify.old/playlist-2.json'
-# with open(file, 'r') as fp:
-#     data = json.load(fp)
-
-# if data:
-#     for item in data['items']:
-#         print(item["track"]["name"], end=",")
-#         print(item["track"]["album"]["name"])
+                q.put((img_url,img))
+    imgs_downloading = False
 
 ctx = bimpy.Context()
 ctx.init(1024,768, "Spotify Collage")
