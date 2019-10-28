@@ -1,6 +1,8 @@
 import io
 import json
+import math
 import threading
+import time
 
 import bimpy
 import requests
@@ -14,8 +16,17 @@ from PIL import Image
 
 q = Queue()
 data = {}
+
+# bimpy images for display within bimpy context
 bimpy_imgdict = {}
 
+# PIL images for making collage can potentially be higher resoultion than one used for display
+imgdict = {}
+
+# urls of album art images in a playlist in the same order as they are listed in the playlist
+img_urls = []
+
+current_playlist_id = None
 playlist_downloading = False
 imgs_downloading = False
 
@@ -27,12 +38,42 @@ credentials = oauth2.SpotifyClientCredentials(
     client_id='27714d82fb8f4c8e8f6a269330b8d613',
     client_secret='b3ff8b67e39e4704baf265c4e7fa8e7c')
 
+def make_collage(playlist_id, images, cols=5, tile_size=(64, 64)):
+    rows = math.ceil(len(images) / cols)
+    bg = Image.new('RGB', (cols * tile_size[0], rows * tile_size[1]), color='#000')
+    y = 0
+    x = 0
+    for img in images:
+        #img = Image.open(path)
+        img.thumbnail(tile_size)
+        (width, height) = img.size
+
+        #sometimes the thumbnails are not square. resizing them to
+        #tile_size retains the aspect ratio but then the width or the
+        #height falls short of the tile_size. The following is to
+        #"center align" the thumbnail within its tile_sized slot.
+        offset_x, offset_y = 0,0
+        if width < tile_size[0]:
+            offset_x = (tile_size[0]-width)//2
+        if height < tile_size[1]:
+            offset_y = (tile_size[1]-height)//2
+
+        bg.paste(img,(x+offset_x,y+offset_y))
+
+        x += tile_size[0]
+        if x == cols * tile_size[0]:
+            x = 0
+            y += tile_size[1]
+
+    bg.save(f"/Users/deepakg/Desktop/{playlist_id}.png", "png")
+    bg.show()
+
 
 def download_image(url):
     # simulate slow connection by uncommenting the lines below
-    import random
-    import time
-    time.sleep(int(random.random()*10))
+    # import random
+    # import time
+    # time.sleep(int(random.random()*10))
     r = requests.get(url)
     if r.status_code != requests.codes.ok:
         assert False, 'Status code error: {}.'.format(r.status_code)
@@ -41,8 +82,15 @@ def download_image(url):
     return img
 
 
-img_urls = []
-def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
+def fetch_playlist(playlist_uri=''):
+    global current_playlist_id
+    if not playlist_uri or \
+       not playlist_uri.startswith('spotify:playlist:'):
+        return
+
+    playlist_id = playlist_uri.split(':')[-1]
+    current_playlist_id = playlist_id
+
     global data
     global playlist_downloading
     global imgs_downloading
@@ -93,21 +141,26 @@ def fetch_playlist(playlist_id='1FaRfqrVEykFXkOl1vXSbt'):
                     # first image is ready, tell imgui to start refreshing the images
                     refresh = True
                     first = False
+                imgdict[img_url] = img
                 q.put((img_url,img))
     imgs_downloading = False
 
 ctx = bimpy.Context()
-ctx.init(1024,768, "Spotify Collage")
+ctx.init(1200,768, "Spotify Collage")
 
 playlist_url = bimpy.String()
-bimpy_images = []
 refresh = False
-
+COL_COUNT = 8
+saved = ""
+saved_time = 0
+# import os
+# print(os.path.dirname(os.path.realpath(__file__)))
+# exit()
 while(not ctx.should_close()):
     with ctx:
         # bimpy.themes.set_light_theme()
         bimpy.set_next_window_pos(bimpy.Vec2(20, 20), bimpy.Condition.Once)
-        bimpy.set_next_window_size(bimpy.Vec2(800, 600), bimpy.Condition.Once)
+        bimpy.set_next_window_size(bimpy.Vec2(600, 600), bimpy.Condition.Once)
         bimpy.begin("Track Listing", bimpy.Bool(True), bimpy.WindowFlags.HorizontalScrollbar | bimpy.WindowFlags.NoSavedSettings)
         bimpy.input_text('Playlist URL', playlist_url, 255)
         if not playlist_downloading and not imgs_downloading:
@@ -116,7 +169,7 @@ while(not ctx.should_close()):
                 thread = threading.Thread(target=fetch_playlist, args=(playlist_url.value.strip(),))
                 thread.start()
         elif imgs_downloading:
-            bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
+            bimpy.button("Fetching album covers...")
         elif playlist_downloading:
             bimpy.button("Fetching...")
 
@@ -147,17 +200,28 @@ while(not ctx.should_close()):
                 if url is None or img is None:
                     break
                 if refresh == True:
-                    bimpy_images = []
                     bimpy_imgdict = {}
                     refresh = False
-                bimpy_images.append(bimpy.Image(img))
                 bimpy_imgdict[url] = bimpy.Image(img)
                 q.task_done()
 
-        #if bimpy_images:
         if img_urls:
-            # print(bimpy_imgdict)
+            bimpy.set_next_window_pos(bimpy.Vec2(625, 20), bimpy.Condition.Once)
+            bimpy.set_next_window_size(bimpy.Vec2(532, 600), bimpy.Condition.Once)
             bimpy.begin('Collage')
+            if imgs_downloading:
+                bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
+            elif bimpy.button("Save Collage"):
+                # print(data)
+                make_collage(current_playlist_id, imgdict.values(), COL_COUNT)
+                saved = current_playlist_id
+                saved_time = time.clock()
+                print("saved:", saved_time)
+
+            if time.clock() - saved_time <= 2:
+                bimpy.same_line()
+                bimpy.text(f"Saved to {saved}.png")
+
             width,height = 64,64
             first = True
             col_count = 0
@@ -169,7 +233,7 @@ while(not ctx.should_close()):
                     first = False
                 bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*height+padding))
                 col_count += 1
-                if col_count == 7:
+                if col_count == COL_COUNT:
                     row_count += 1
                     col_count = 0
                 b_img = bimpy_imgdict.get(url, None)
