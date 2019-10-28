@@ -41,7 +41,7 @@ credentials = oauth2.SpotifyClientCredentials(
     client_id='27714d82fb8f4c8e8f6a269330b8d613',
     client_secret='b3ff8b67e39e4704baf265c4e7fa8e7c')
 
-def make_collage(playlist_id, images, cols=5, tile_size=(64, 64)):
+def save_collage(playlist_id, images, save_dir, cols=5, tile_size=(64, 64)):
     rows = math.ceil(len(images) / cols)
     bg = Image.new('RGB', (cols * tile_size[0], rows * tile_size[1]), color='#000')
     y = 0
