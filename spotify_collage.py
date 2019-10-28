@@ -15,6 +15,8 @@ from concurrent import futures
 
 from PIL import Image
 
+program_start_dir = os.path.dirname(os.path.realpath(__file__))
+
 q = Queue()
 data = {}
 
