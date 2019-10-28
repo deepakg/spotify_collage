@@ -68,9 +68,9 @@ def save_collage(playlist_id, images, save_dir, cols=5, tile_size=(64, 64)):
             x = 0
             y += tile_size[1]
 
-    bg.save(f"/Users/deepakg/Desktop/{playlist_id}.png", "png")
-    bg.show()
-
+    save_path = f"{save_dir}/{playlist_id}.png"
+    bg.save(save_path, "png")
+    return save_path
 
 def download_image(url):
     # simulate slow connection by uncommenting the lines below
@@ -216,10 +216,9 @@ while(not ctx.should_close()):
                 bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
             elif bimpy.button("Save Collage"):
                 # print(data)
-                make_collage(current_playlist_id, imgdict.values(), COL_COUNT)
-                saved = current_playlist_id
+                saved = save_collage(current_playlist_id, imgdict.values(), program_start_dir, COL_COUNT)
                 saved_time = time.clock()
-                print("saved:", saved_time)
+                print("saved:", saved)
 
             if time.clock() - saved_time <= 2:
                 bimpy.same_line()
