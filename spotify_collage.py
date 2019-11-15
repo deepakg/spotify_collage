@@ -37,10 +37,21 @@ imgs_downloaded = 0
 percent_downloaded = 0
 imgs_total = 0
 
-credentials = oauth2.SpotifyClientCredentials(
-    client_id='27714d82fb8f4c8e8f6a269330b8d613',
-    client_secret='b3ff8b67e39e4704baf265c4e7fa8e7c')
+def get_credentials():
+    import configparser
+    keyfile = os.path.expanduser('~/') + '.api_keys'
+    if not os.path.isfile(keyfile):
+        print(f"Could not open {keyfile}. Please make sure it exists and has the following entries")
+        print("[spotify]")
+        print("client_id=<your client id>")
+        print("client_secret=<your client secret>")
+        exit()
 
+    config = configparser.ConfigParser()
+    config.read(keyfile)
+    return (config['spotify']['client_id'], config['spotify']['client_secret'])
+
+get_credentials()
 def save_collage(playlist_id, images, save_dir, cols=5, tile_size=(64, 64)):
     rows = math.ceil(len(images) / cols)
     bg = Image.new('RGB', (cols * tile_size[0], rows * tile_size[1]), color='#000')
@@ -156,9 +167,7 @@ refresh = False
 COL_COUNT = 8
 saved = ""
 saved_time = 0
-# import os
-# print(os.path.dirname(os.path.realpath(__file__)))
-# exit()
+credentials = oauth2.SpotifyClientCredentials(*get_credentials())
 while(not ctx.should_close()):
     with ctx:
         # bimpy.themes.set_light_theme()
