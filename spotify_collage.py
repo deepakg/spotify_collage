@@ -163,6 +163,7 @@ ctx = bimpy.Context()
 ctx.init(1200,768, "Spotify Collage")
 
 playlist_url = bimpy.String()
+b_col_count = bimpy.Int(0)
 refresh = False
 COL_COUNT = 8
 saved = ""
@@ -215,6 +216,10 @@ while(not ctx.should_close()):
                     break
                 if refresh == True:
                     bimpy_imgdict = {}
+                    if len(img_urls) < COL_COUNT:
+                        b_col_count.value = len(img_urls)
+                    else:
+                        b_col_count.value = COL_COUNT
                     refresh = False
                 bimpy_imgdict[url] = bimpy.Image(img)
                 q.task_done()
@@ -226,6 +231,14 @@ while(not ctx.should_close()):
             if imgs_downloading:
                 bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
             elif bimpy.button("Save Collage"):
+                bimpy.text("Downloading thumbnails")
+                bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"{imgs_downloaded}/{imgs_total}")
+            else:
+                bimpy.text("Collage columns")
+                bimpy.same_line()
+                bimpy.slider_int("", b_col_count, 1, len(img_urls))
+
+            if not imgs_downloading and bimpy.button("Save Collage"):
                 # print(data)
                 saved = save_collage(current_playlist_id, imgdict.values(), program_start_dir, COL_COUNT)
                 saved_time = time.clock()
