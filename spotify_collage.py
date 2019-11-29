@@ -52,13 +52,14 @@ def get_credentials():
     return (config['spotify']['client_id'], config['spotify']['client_secret'])
 
 get_credentials()
-def save_collage(playlist_id, images, save_dir, cols=5, tile_size=(64, 64)):
-    rows = math.ceil(len(images) / cols)
+def save_collage(playlist_id, img_urls, imgdict, save_dir, cols=5, tile_size=(64, 64)):
+    rows = math.ceil(len(img_urls) / cols)
     bg = Image.new('RGB', (cols * tile_size[0], rows * tile_size[1]), color='#000')
     y = 0
     x = 0
-    for img in images:
+    for url in img_urls:
         #img = Image.open(path)
+        img = imgdict[url]
         img.thumbnail(tile_size)
         (width, height) = img.size
 
@@ -238,7 +239,7 @@ while(not ctx.should_close()):
 
             if not imgs_downloading and bimpy.button("Save Collage"):
                 # print(data)
-                saved = save_collage(current_playlist_id, imgdict.values(), program_start_dir, COL_COUNT)
+                saved = save_collage(current_playlist_id, img_urls, imgdict, program_start_dir, b_col_count.value)
                 saved_time = time.clock()
                 print("saved:", saved)
 
