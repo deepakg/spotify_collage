@@ -227,10 +227,8 @@ while(not ctx.should_close()):
         if img_urls:
             bimpy.set_next_window_pos(bimpy.Vec2(625, 20), bimpy.Condition.Once)
             bimpy.set_next_window_size(bimpy.Vec2(532, 600), bimpy.Condition.Once)
-            bimpy.begin('Collage')
+            bimpy.begin('Collage', bimpy.Bool(True), bimpy.WindowFlags.HorizontalScrollbar)
             if imgs_downloading:
-                bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"Downloading Thumbnails {imgs_downloaded}/{imgs_total}")
-            elif bimpy.button("Save Collage"):
                 bimpy.text("Downloading thumbnails")
                 bimpy.progress_bar(percent_downloaded, bimpy.Vec2(-1,0), f"{imgs_downloaded}/{imgs_total}")
             else:
@@ -253,18 +251,20 @@ while(not ctx.should_close()):
             col_count = 0
             row_count = 0
             padding = 0
+            disp_count = 0
             for url in img_urls:
                 if first:
                     padding = bimpy.get_cursor_pos().y
                     first = False
                 bimpy.set_cursor_pos(bimpy.Vec2(col_count*width, row_count*height+padding))
                 col_count += 1
-                if col_count == COL_COUNT:
+                if col_count == b_col_count.value:
                     row_count += 1
                     col_count = 0
                 b_img = bimpy_imgdict.get(url, None)
                 if b_img:
                     bimpy.image(b_img)
+                    disp_count += 1
                 bimpy.same_line()
             bimpy.end()
         bimpy.end()
