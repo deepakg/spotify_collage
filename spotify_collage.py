@@ -174,7 +174,9 @@ while(not ctx.should_close()):
         bimpy.set_next_window_pos(bimpy.Vec2(20, 20), bimpy.Condition.Once)
         bimpy.set_next_window_size(bimpy.Vec2(600, 600), bimpy.Condition.Once)
         bimpy.begin("Track Listing", bimpy.Bool(True), bimpy.WindowFlags.HorizontalScrollbar | bimpy.WindowFlags.NoSavedSettings)
-        bimpy.input_text('Playlist URL', playlist_url, 255)
+        bimpy.text('Spotify Playlist URI')
+        bimpy.same_line()
+        bimpy.input_text('', playlist_url, 255)
         if not playlist_downloading and not imgs_downloading:
             if bimpy.button("Fetch##Fetcher"):
                 # data = fetch_playlist() # this blocks so let's use a thread
