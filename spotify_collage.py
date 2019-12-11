@@ -52,7 +52,7 @@ def get_credentials():
     return (config['spotify']['client_id'], config['spotify']['client_secret'])
 
 get_credentials()
-def save_collage(playlist_id, img_urls, imgdict, save_dir, cols=5, tile_size=(64, 64)):
+def save_collage(playlist_id, img_urls, imgdict, save_dir, cols=5, tile_size=(100, 100)):
     rows = math.ceil(len(img_urls) / cols)
     bg = Image.new('RGB', (cols * tile_size[0], rows * tile_size[1]), color='#000')
     y = 0
@@ -132,7 +132,7 @@ def fetch_playlist(playlist_uri=''):
     seen_img_urls = set()
     for item in data['items']:
         for image in item['track']['album']['images']:
-            if image['width'] == 64 and image['url'] not in seen_img_urls:
+            if image['width'] == 300 and image['url'] not in seen_img_urls:
                 img_urls.append(image['url'])
                 seen_img_urls.add(image['url'])
 
@@ -144,6 +144,7 @@ def fetch_playlist(playlist_uri=''):
         first = True
         for future in futures.as_completed(future_url):
             img_url = future_url[future]
+            print(img_url)
             try:
                 img = future.result()
                 imgs_downloaded += 1
@@ -222,7 +223,7 @@ while(not ctx.should_close()):
                     else:
                         b_col_count.value = COL_COUNT
                     refresh = False
-                bimpy_imgdict[url] = bimpy.Image(img)
+                bimpy_imgdict[url] = bimpy.Image(img.resize((64,64), Image.ANTIALIAS))
                 q.task_done()
 
         if img_urls:
