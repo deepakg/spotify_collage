@@ -207,23 +207,24 @@ while(not ctx.should_close()):
                 count += 1
             bimpy.columns(1)
 
-        while True:
-            try:
-                (url,img) = q.get(block=False)
-            except:
-                break
-            else:
-                if url is None or img is None:
-                    break
-                if refresh == True:
-                    bimpy_imgdict = {}
-                    if len(img_urls) < COL_COUNT:
-                        b_col_count.value = len(img_urls)
-                    else:
-                        b_col_count.value = COL_COUNT
-                    refresh = False
-                bimpy_imgdict[url] = bimpy.Image(img.resize((64,64), Image.ANTIALIAS))
-                q.task_done()
+        try:
+            (url,img) = q.get(block=False)
+        except:
+            #break
+            pass
+        else:
+            if url is None or img is None:
+                #break
+                pass
+            if refresh == True:
+                bimpy_imgdict = {}
+                if len(img_urls) < COL_COUNT:
+                    b_col_count.value = len(img_urls)
+                else:
+                    b_col_count.value = COL_COUNT
+                refresh = False
+            bimpy_imgdict[url] = bimpy.Image(img.resize((64,64), Image.ANTIALIAS))
+            q.task_done()
 
         if img_urls:
             bimpy.set_next_window_pos(bimpy.Vec2(625, 20), bimpy.Condition.Once)
