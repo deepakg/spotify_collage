@@ -144,7 +144,6 @@ def fetch_playlist(playlist_uri=''):
         first = True
         for future in futures.as_completed(future_url):
             img_url = future_url[future]
-            print(img_url)
             try:
                 img = future.result()
                 imgs_downloaded += 1
