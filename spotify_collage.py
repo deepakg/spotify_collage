@@ -210,11 +210,9 @@ while(not ctx.should_close()):
         try:
             (url,img) = q.get(block=False)
         except:
-            #break
             pass
         else:
             if url is None or img is None:
-                #break
                 pass
             if refresh == True:
                 bimpy_imgdict = {}
