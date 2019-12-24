@@ -9,15 +9,15 @@ import bimpy
 import requests
 import spotipy
 import spotipy.oauth2 as oauth2
+import queue
 
-from queue import Queue
 from concurrent import futures
 
 from PIL import Image
 
 program_start_dir = os.path.dirname(os.path.realpath(__file__))
 
-q = Queue()
+q = queue.Queue()
 data = {}
 
 # bimpy images for display within bimpy context
@@ -209,7 +209,7 @@ while(not ctx.should_close()):
 
         try:
             (url,img) = q.get(block=False)
-        except:
+        except queue.Empty:
             pass
         else:
             if url is None or img is None:
